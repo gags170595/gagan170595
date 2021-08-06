@@ -1,0 +1,62 @@
+#Necessary Libraries and uploading file
+library(readxl)
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+excel_sheets('/Users/gagannarula/Downloads/r_datafile.xlsx')
+df <- read_excel('/Users/gagannarula/Downloads/r_datafile.xlsx' , sheet = "Sheet1")
+head(df)
+summary(df)
+describe(df)
+ 
+#Changing variables 
+ av_income <- df$Average_family_income
+ mean_earning <- df$`Mean_earning_in_7 years`
+ sat_score <- df$Sat_score_average
+ total_expenditure <- df$Total_expenditure_student
+ asain_student <- df$Total_Asain_student
+ white_student <- df$Total_white_students
+ black_student <- df$Total_black_students
+ total_cost <- df$cost_of_institutions
+ p_o_p <- df$Private_or_Public
+ 
+#Graphical representaion of 2 most important variables 
+ggplot(df,aes(x=total_cost,y=mean_earning)) + geom_point() +  stat_smooth()
+
+#finding numerical columns only
+nums <- unlist(lapply(df, is.numeric)) 
+nums
+data_num <- df[ , nums]                      
+data_num 
+head(df)
+
+#Builing a correlation matix to understand better
+m <- cor(data_num)
+library(corrplot)
+corrplot(m,method = "number")
+
+#Simple Regression model analysis
+model1 <- lm(mean_earning ~ total_cost , df)
+model1
+summary(model1)
+plot(model1)
+
+#Multiple Linear regression 
+model2 <- lm(mean_earning ~ total_cost + total_expenditure + av_income+sat_score+asain_student+white_student+black_student+p_o_p , df)
+model2
+summary(model2)
+plot(model2)
+
+#Multiple Regression Model 2
+model3 <- lm(mean_earning ~ total_expenditure + av_income + sat_score , df)
+model3
+summary(model3)
+plot(model3)
+
+
+
+
+
+ 
+
+ 

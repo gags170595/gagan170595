@@ -1,0 +1,360 @@
+---
+title: "Gagan Narula"
+subtitle: "Student ID: 2003081"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+\newpage
+```{r}
+#importing csv file
+# diabetes_dataframe = read.csv("D:\\Course Material\\Statistics\\MA6101data.csv")
+diabetes_dataframe = read.csv("MA6101data.csv")
+#sub-sampling
+set.seed(20153511)
+```
+
+
+```{r}
+index <- sample(1:320, replace = FALSE)
+mydata = diabetes_dataframe[index, c(
+  'pregnant',
+  'glucose',
+  'pressure',
+  'triceps',
+  'insulin',
+  'mass',
+  'age',
+  'diabetes',
+  'Risk'
+)]
+mydata$diabetes [mydata$diabetes == "neg"] <- 0
+mydata$diabetes [mydata$diabetes == "pos"] <- 1
+mydata$diabetes = as.integer(mydata$diabetes)
+head(mydata)
+```
+
+
+## Summary Statistics:
+
+```{r}
+summary(mydata)
+```
+
+
+## To visualize correlation of data
+
+```{r}
+pairs(mydata)
+```
+
+# Question (4a)
+
+## Correlation matrix
+
+Reference: http://www.sthda.com/english/wiki/ggplot2-quick-correlation-matrix-heatmap-r-software-and-data-visualization
+
+```{r}
+# install.packages("ggplot2")
+library(ggplot2)
+```
+
+```{r}
+# Get correlation matrix 
+cormat <- round(cor(mydata),2)
+head(cormat)
+```
+```{r}
+# install.packages("reshape2")
+library(reshape2)
+# Convert data to long format
+melted_cormat <- melt(cormat)
+head(melted_cormat)
+```
+
+```{r}
+# sort the correlation matrix
+reorder_cormat <- function(cormat) {
+  # Use correlation between variables as distance
+  dd <- as.dist((1 - cormat) / 2)
+  hc <- hclust(dd)
+  cormat <- cormat[hc$order, hc$order]
+}
+```
+
+```{r}
+# Get lower triangle of the correlation matrix
+get_lower_tri <- function(cormat) {
+  cormat[upper.tri(cormat)] <- NA
+  return(cormat)
+}
+# Get upper triangle of the correlation matrix
+get_upper_tri <- function(cormat) {
+  cormat[lower.tri(cormat)] <- NA
+  return(cormat)
+}
+```
+
+
+```{r}
+# Reorder the correlation matrix
+cormat <- reorder_cormat(cormat)
+upper_tri <- get_upper_tri(cormat)
+# Melt the correlation matrix
+melted_cormat <- melt(upper_tri, na.rm = TRUE)
+# Create a ggheatmap
+ggheatmap <- ggplot(melted_cormat, aes(Var2, Var1, fill = value)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient2(
+    low = "blue",
+    high = "red",
+    mid = "white",
+    midpoint = 0,
+    limit = c(-1, 1),
+    space = "Lab",
+    name = "Pearson\nCorrelation"
+  ) +
+  theme_minimal() + # minimal theme
+  theme(axis.text.x = element_text(
+    angle = 45,
+    vjust = 1,
+    size = 12,
+    hjust = 1
+  )) +
+  coord_fixed()
+ggheatmap +
+  geom_text(aes(Var2, Var1, label = value),
+            color = "black",
+            size = 4) +
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    axis.ticks = element_blank(),
+    legend.justification = c(1, 0),
+    legend.position = c(0.6, 0.7),
+    legend.direction = "horizontal"
+  ) +
+  guides(fill = guide_colorbar(
+    barwidth = 7,
+    barheight = 1,
+    title.position = "top",
+    title.hjust = 0.5
+  ))
+```
+
+
+## Summary of observations:
+
+- Diabetes is highly related to glucose, insulin, pressure and risk
+
+- Risk is highly related to triceps and mass
+
+
+
+```{r}
+library(tidyverse)
+```
+
+
+## Confidence Interval
+Calculating 95% confidence interval of each column, it determines that there is a 95% chance that the mean value of each column will fall between the range that we get form this function.
+
+```{r}
+#Calculating 95% confidence interval for mean of all columns.
+columns = names(mydata)
+for (column in columns)
+  
+{
+  n = nrow(mydata)
+  s = sd(mydata[[column]])
+  u = mean(mydata[[column]])
+  
+  alpha = 0.05
+  
+  ci = u + c(qnorm(c(alpha / 2, 1 - alpha / 2))) * s / sqrt(n)
+  cat(
+    sprintf(
+      "95 percent confidence interval for the mean of column \"%s\" is \t: \"%f\" - \"%f\" \n",
+      column,
+      ci[1],
+      ci[2]
+    )
+  )
+}
+```
+# Question (4b)
+## Analyzing glucose, pressure and insulin levels of people with and without diabetes.
+
+
+## Glucose comparision
+```{r}
+# creating a subset of people with and without diabetes.
+diabetes_yes <- subset(mydata, diabetes == 1)
+diabetes_no <- subset(mydata, diabetes == 0)
+# Histogram to analyze glucose level of patients with diabetes.
+glu_has_dia = data.matrix(diabetes_yes["glucose"])
+hist(
+  glu_has_dia,
+  main = 'Glucose level of patients with diabetes',
+  xlim = c(65, 200),
+  ylim = c(0, 25),
+  xlab = 'Glucose Level',
+  col = "darkmagenta",
+  breaks = 10
+)
+# Histogram to analyze glucose level of patients without diabetes.
+glu_hasno_dia = data.matrix(diabetes_no["glucose"])
+hist(
+  glu_hasno_dia,
+  main = 'Glucose level of patients without diabetes',
+  xlim = c(65, 200),
+  ylim = c(0, 50),
+  xlab = 'Glucose Level',
+  col = "darkmagenta",
+  breaks = 10
+)
+```
+
+## Observation:
+
+Based on the visualization above, we can conclude that if a patient has diabetes then, he will have a higher blood-glucose level.
+
+
+
+## Insulin comparision
+```{r}
+# Histogram to analyze insulin level of patients with diabetes.
+glu_has_dia = data.matrix(diabetes_yes["insulin"])
+hist(
+  glu_has_dia,
+  main = 'Insulin level of patients with diabetes',
+  xlim = c(0, 800),
+  ylim = c(0, 40),
+  xlab = 'Insulin Level',
+  col = "darkmagenta",
+  breaks = 50
+)
+# Histogram to analyze insulin level of patients without diabetes.
+glu_hasno_dia = data.matrix(diabetes_no["insulin"])
+hist(
+  glu_hasno_dia,
+  main = 'Insulin level of patients without diabetes',
+  xlim = c(0, 800),
+  ylim = c(0, 40),
+  xlab = 'Insulin Level',
+  col = "darkmagenta",
+  breaks = 50
+)
+```
+
+## Observation:
+
+Patients with diabetes have lesser insulin level compared with participants without diabetes.
+
+
+
+
+## Pressure comparision
+```{r}
+# Histogram to analyze insulin level of patients with diabetes.
+glu_has_dia = data.matrix(diabetes_yes["pressure"])
+hist(
+  glu_has_dia,
+  main = 'Pressure level of patients with diabetes',
+  xlim = c(20, 120),
+  ylim = c(0, 40),
+  xlab = 'Blood Pressure Level',
+  col = "darkmagenta",
+  breaks = 50
+)
+# Histogram to analyze insulin level of patients without diabetes.
+glu_hasno_dia = data.matrix(diabetes_no["pressure"])
+hist(
+  glu_hasno_dia,
+  main = 'Pressure level of patients without diabetes',
+  xlim = c(20, 120),
+  ylim = c(0, 40),
+  xlab = 'Blood Pressure Level',
+  col = "darkmagenta",
+  breaks = 50
+)
+```
+
+## Observation:
+
+It can also be observed that patients with diabetes have higher blood pressure in comparision to participants without diabetes.
+
+
+# Question (4c)
+
+```{r}
+# Mean glucose level of patients with and without diabetes.
+mean_with_diabetes = mean(data.matrix(diabetes_yes["glucose"]))
+mean_without_diabetes = mean(data.matrix(diabetes_no["glucose"]))
+#Number of participants with and without diabetes.
+n_with_diabetes = nrow(diabetes_yes)
+n_without_diabetes = nrow(diabetes_no)
+#standard deviation of glucose column for participants with and without diabetes.
+s_with_diabetes = sd(data.matrix(diabetes_yes["glucose"]))
+s_without_diabetes = sd(data.matrix(diabetes_no["glucose"]))
+# H0 : mean_with_diabetes = mean_without_diabetes   (Difference in the mean glucose level of patients with diabetes is equal to participants without diabetes).
+# Ha : mean_with_diabetes != mean_without_diabetes
+#Hypothesis test (t test) to compare the mean glucose level of people with and without diabetes.
+t.test(diabetes_yes["glucose"],
+       diabetes_no["glucose"],
+       alternative = "two.sided",
+       var.equal = FALSE)
+```
+
+## Summary of observations:
+
+-- The true difference in mean of the two datasets is not equal to 0 hence, there is statistically significant difference in the mean glucose level of participants with and without diabetes. 
+
+-- With a 95% confidence interval the data shows that the difference in the mean glucose level would lie between 27.20 to 40.41. 
+
+-- Because the p value is less there is very strong evidence against the hypothesis.
+
+
+# Question (4d)
+
+
+Building the linear regression model to estimate 'Risk' based on all 8 values in our dataset. The model coefficients are computed as follows.
+
+```{r}
+model <- lm(Risk ~., data = mydata)
+summary(model)
+```
+
+## Interpretation:
+
+One of the main element in analyzing the regression model is to examine the F-statistic and p-value which is shown at the bottom of the model summary.
+
+It can be observed that the p-value in our model is <2.2e-16 which is highly significant. This values shows that at least one of the variables used to estimate the 'Risk' is significantly correlated to 'Risk'.
+
+To check which variable is significantly related to 'Risk', I have used the coefficient table as shown below.
+
+```{r}
+summary(model)$coefficient
+```
+
+From the above coefficient table, we can see that variables(predictors) mass and pressure contribute significantly in estimating the 'Risk'
+
+We can eliminate the less significant variables from the model to get better estimates.
+
+The 95% confidence interval of the model for 'Risk' is shown below.
+
+```{r}
+confint(model)
+```
+## Plot
+
+```{r}
+# diagnostic plots
+layout(matrix(c(1, 2, 3, 4), 2, 2)) # optional 4 graphs/page
+plot(model)
